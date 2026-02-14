@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Ball Escape - Boss Battle</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Arial', sans-serif;
+            touch-action: none;
+        }
+
+        #gameCanvas {
+            display: block;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Menu Screen */
+        #menuScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        #menuScreen.hidden {
+            display: none;
+        }
+
+        .menu-title {
+            font-size: 72px;
+            font-weight: bold;
+            color: #FFD700;
+            text-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+
+        .menu-subtitle {
+            font-size: 24px;
+            color: white;
+            margin-bottom: 40px;
+            opacity: 0.9;
+        }
+
+        .menu-btn {
+            padding: 20px 60px;
+            font-size: 28px;
+            background: #FFD700;
+            color: #333;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s;
+            font-weight: bold;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .menu-btn:hover {
+            transform: scale(1.1);
+            background: #FFA500;
+        }
+
+        .high-score-display {
+            margin-top: 30px;
+            font-size: 20px;
+            color: white;
+            opacity: 0.8;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* UI */
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            color: white;
+            z-index: 10;
+        }
+
+        #score {
+            font-size: 48px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            margin-bottom: 10px;
+        }
+
+        #highScore {
+            font-size: 20px;
+            opacity: 0.9;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        #bossWarning {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 64px;
+            font-weight: bold;
+            color: #ff0000;
+            text-shadow: 4px 4px 8px rgba(0, 0, 0, 0.8);
+            display: none;
+            z-index: 15;
+            animation: warning 0.5s infinite;
+        }
+
+        @keyframes warning {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        #gameOver {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            color: white;
+            display: none;
+            z-index: 20;
+            min-width: 300px;
+        }
+
+        #gameOver h2 {
+            font-size: 36px;
+            margin-bottom: 20px;
+            color: #ff6b6b;
+        }
+
+        #gameOver p {
+            font-size: 24px;
+            margin: 10px 0;
+        }
+
+        .game-btn {
+            margin-top: 20px;
+            padding: 15px 40px;
+            font-size: 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 10px;
+        }
+
+        .game-btn:hover {
+            background: #764ba2;
+            transform: scale(1.05);
+        }
+
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 16px;
+            text-align: center;
+            opacity: 0.8;
+        }
+
+        #bossHealth {
+            position: absolute;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            max-width: 400px;
+            display: none;
+            z-index: 10;
+        }
+
+        .health-bar-container {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            padding: 10px;
+        }
+
+        .health-bar-title {
+            color: #ff0000;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .health-bar-bg {
+            background: rgba(255, 0, 0, 0.3);
+            border-radius: 5px;
+            height: 20px;
+            overflow: hidden;
+        }
+
+        .health-bar-fill {
+            background: linear-gradient(90deg, #ff0000, #ff6b6b);
+            height: 100%;
+            width: 100%;
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <!-- Menu Screen -->
+    <div id="menuScreen">
+        <div class="menu-title">BALL ESCAPE</div>
+        <div class="menu-subtitle">Survive the Boss at Score 50!</div>
+        <button class="menu-btn" id="startBtn">START GAME</button>
+        <button class="menu-btn" id="howToPlayBtn">HOW TO PLAY</button>
+        <div class="high-score-display">High Score: <span id="menuHighScore">0</span></div>
+    </div>
+
+    <!-- Game UI -->
+    <div id="ui" style="display: none;">
+        <div id="score">0</div>
+        <div id="highScore">High Score: 0</div>
+    </div>
+
+    <div id="bossWarning">⚠️ BOSS INCOMING! ⚠️</div>
+
+    <div id="bossHealth">
+        <div class="health-bar-container">
+            <div class="health-bar-title">BOSS HP</div>
+            <div class="health-bar-bg">
+                <div class="health-bar-fill" id="healthFill"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="controls">
+        <span id="controlText">Drag the ball to move | Collect coins to increase score</span>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="gameOver">
+        <h2 id="gameOverTitle">Game Over!</h2>
+        <p>Final Score: <span id="finalScore">0</span></p>
+        <p>High Score: <span id="finalHighScore">0</span></p>
+        <button class="game-btn" id="restartBtn">Play Again</button>
+        <button class="game-btn" id="menuBtn">Main Menu</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas size
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Game states
+        const STATES = {
+            MENU: 'menu',
+            PLAYING: 'playing',
+            BOSS_WARNING: 'boss_warning',
+            BOSS_FIGHT: 'boss_fight',
+            GAME_OVER: 'game_over'
+        };
+
+        let gameState = STATES.MENU;
+
+        // Game variables
+        let ball = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            radius: 20,
+            vx: 0,
+            vy: 0,
+            color: '#FFD700',
+            isDragging: false
+        };
+
+        let boss = {
+            x: canvas.width / 2,
+            y: 100,
+            radius: 80,
+            health: 100,
+            maxHealth: 100,
+            speed: 2,
+            mouthOpen: 0,
+            mouthDirection: 1,
+            active: false
+        };
+
+        let coins = [];
+        let particles = [];
+        let score = 0;
+        let highScore = localStorage.getItem('highScore') || 0;
+        let bossDefeated = false;
+        let warningTimer = 0;
+
+        // Mouse/Touch tracking
+        let mouseX = 0;
+        let mouseY = 0;
+        let isMouseDown = false;
+
+        // Update menu high score
+        document.getElementById('menuHighScore').textContent = highScore;
+
+        // Menu buttons
+        document.getElementById('startBtn').addEventListener('click', startGame);
+        document.getElementById('howToPlayBtn').addEventListener('click', showHowToPlay);
+        document.getElementById('restartBtn').addEventListener('click', startGame);
+        document.getElementById('menuBtn').addEventListener('click', showMenu);
+
+        function showMenu() {
+            gameState = STATES.MENU;
+            document.getElementById('menuScreen').classList.remove('hidden');
+            document.getElementById('ui').style.display = 'none';
+            document.getElementById('gameOver').style.display = 'none';
+            document.getElementById('bossHealth').style.display = 'none';
+            document.getElementById('menuHighScore').textContent = highScore;
+        }
+
+        function showHowToPlay() {
+            alert('HOW TO PLAY:\n\n1. Drag the ball to move it around\n2. Collect golden coins to increase your score\n3. At score 50, a BOSS appears!\n4. Dodge the boss for 30 seconds to win\n5. If the boss catches you, game over!\n\nGood luck!');
+        }
+
+        function startGame() {
+            // Reset game
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2;
+            ball.vx = 0;
+            ball.vy = 0;
+            ball.isDragging = false;
+            
+            boss.active = false;
+            boss.health = boss.maxHealth;
+            bossDefeated = false;
+            
+            score = 0;
+            coins = [];
+            particles = [];
+            warningTimer = 0;
+            
+            gameState = STATES.PLAYING;
+            
+            document.getElementById('menuScreen').classList.add('hidden');
+            document.getElementById('ui').style.display = 'block';
+            document.getElementById('score').textContent = score;
+            document.getElementById('highScore').textContent = `High Score: ${highScore}`;
+            document.getElementById('gameOver').style.display = 'none';
+            document.getElementById('bossWarning').style.display = 'none';
+            document.getElementById('bossHealth').style.display = 'none';
+            
+            // Spawn initial coins
+            spawnCoins(5);
+        }
+
+        // Particle system
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 8;
+                this.vy = (Math.random() - 0.5) * 8;
+                this.radius = Math.random() * 4 + 2;
+                this.life = 1;
+                this.decay = Math.random() * 0.02 + 0.01;
+                this.color = color || `hsl(${Math.random() * 60 + 30}, 100%, 60%)`;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.life -= this.decay;
+                this.vy += 0.2;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.life;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // Coin class
+        class Coin {
+            constructor() {
+                this.x = Math.random() * (canvas.width - 60) + 30;
+                this.y = Math.random() * (canvas.height - 60) + 30;
+                this.radius = 15;
+                this.rotation = 0;
+            }
+
+            update() {
+                this.rotation += 0.05;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+                
+                // Draw coin
+                ctx.beginPath();
+                ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#FFD700';
+                ctx.fill();
+                ctx.strokeStyle = '#FFA500';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                
+                // Draw $ symbol
+                ctx.fillStyle = '#FFA500';
+                ctx.font = 'bold 16px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('$', 0, 0);
+                
+                ctx.restore();
+            }
+
+            checkCollision(ball) {
+                const dx = this.x - ball.x;
+                const dy = this.y - ball.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                return distance < this.radius + ball.radius;
+            }
+        }
+
+        function spawnCoins(count) {
+            for (let i = 0; i < count; i++) {
+                coins.push(new Coin());
+            }
+        }
+
+        // Input handlers
+        function getInputPosition(e) {
+            if (e.touches && e.touches.length > 0) {
+                return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            }
+            return { x: e.clientX, y: e.clientY };
+        }
+
+        function handleStart(e) {
+            e.preventDefault();
+            const pos = getInputPosition(e);
+            mouseX = pos.x;
+            mouseY = pos.y;
+            
+            const dx = mouseX - ball.x;
+            const dy = mouseY - ball.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance < ball.radius + 20) {
+                ball.isDragging = true;
+                isMouseDown = true;
+            }
+        }
+
+        function handleMove(e) {
+            e.preventDefault();
+            const pos = getInputPosition(e);
+            mouseX = pos.x;
+            mouseY = pos.y;
+        }
+
+        function handleEnd(e) {
+            e.preventDefault();
+            ball.isDragging = false;
+            isMouseDown = false;
+        }
+
+        canvas.addEventListener('mousedown', handleStart);
+        canvas.addEventListener('mousemove', handleMove);
+        canvas.addEventListener('mouseup', handleEnd);
+        canvas.addEventListener('touchstart', handleStart);
+        canvas.addEventListener('touchmove', handleMove);
+        canvas.addEventListener('touchend', handleEnd);
+
+        // Boss AI
+        function updateBoss() {
+            if (!boss.active) return;
+
+            // Move towards ball
+            const dx = ball.x - boss.x;
+            const dy = ball.y - boss.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance > 0) {
+                boss.x += (dx / distance) * boss.speed;
+                boss.y += (dy / distance) * boss.speed;
+            }
+
+            // Animate mouth
+            boss.mouthOpen += 0.05 * boss.mouthDirection;
+            if (boss.mouthOpen > 1) {
+                boss.mouthOpen = 1;
+                boss.mouthDirection = -1;
+            } else if (boss.mouthOpen < 0) {
+                boss.mouthOpen = 0;
+                boss.mouthDirection = 1;
+            }
+
+            // Check collision with ball
+            if (distance < boss.radius + ball.radius - 10) {
+                gameOver('EATEN BY BOSS!');
+            }
+
+            // Decrease boss health over time (survival mechanic)
+            boss.health -= 0.05;
+            document.getElementById('healthFill').style.width = (boss.health / boss.maxHealth * 100) + '%';
+
+            if (boss.health <= 0 && !bossDefeated) {
+                bossDefeated = true;
+                boss.active = false;
+                document.getElementById('bossHealth').style.display = 'none';
+                score += 100; // Bonus for defeating boss
+                document.getElementById('score').textContent = score;
+                
+                // Victory particles
+                for (let i = 0; i < 100; i++) {
+                    particles.push(new Particle(canvas.width / 2, canvas.height / 2, '#FFD700'));
+                }
+            }
+        }
+
+        function drawBoss() {
+            if (!boss.active) return;
+
+            ctx.save();
+            
+            // Boss body (angry face)
+            const gradient = ctx.createRadialGradient(boss.x, boss.y, 0, boss.x, boss.y, boss.radius);
+            gradient.addColorStop(0, '#ff6b6b');
+            gradient.addColorStop(1, '#cc0000');
+            
+            ctx.beginPath();
+            ctx.arc(boss.x, boss.y, boss.radius, 0, Math.PI * 2);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            ctx.strokeStyle = '#990000';
+            ctx.lineWidth = 5;
+            ctx.stroke();
+
+            // Eyes
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(boss.x - 25, boss.y - 20, 15, 0, Math.PI * 2);
+            ctx.arc(boss.x + 25, boss.y - 20, 15, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Pupils (following ball)
+            const eyeDx = ball.x - boss.x;
+            const eyeDy = ball.y - boss.y;
+            const eyeDistance = Math.sqrt(eyeDx * eyeDx + eyeDy * eyeDy);
+            const pupilOffset = 5;
+            
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(boss.x - 25 + (eyeDx / eyeDistance * pupilOffset), 
+                    boss.y - 20 + (eyeDy / eyeDistance * pupilOffset), 8, 0, Math.PI * 2);
+            ctx.arc(boss.x + 25 + (eyeDx / eyeDistance * pupilOffset), 
+                    boss.y - 20 + (eyeDy / eyeDistance * pupilOffset), 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Mouth (chomping)
+            const mouthAngle = boss.mouthOpen * Math.PI / 3;
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(boss.x, boss.y + 10, 30, mouthAngle, Math.PI - mouthAngle);
+            ctx.lineTo(boss.x, boss.y + 10);
+            ctx.fill();
+
+            // Teeth
+            ctx.fillStyle = '#fff';
+            for (let i = 0; i < 5; i++) {
+                const angle = (mouthAngle) + (i * (Math.PI - 2 * mouthAngle) / 4);
+                const x = boss.x + Math.cos(angle) * 30;
+                const y = boss.y + 10 + Math.sin(angle) * 30;
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x + Math.cos(angle) * 8, y + Math.sin(angle) * 8);
+                ctx.lineTo(x + Math.cos(angle + 0.2) * 8, y + Math.sin(angle + 0.2) * 8);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            ctx.restore();
+        }
+
+        // Game loop
+        function update() {
+            if (gameState === STATES.MENU || gameState === STATES.GAME_OVER) return;
+
+            // Boss warning state
+            if (gameState === STATES.BOSS_WARNING) {
+                warningTimer++;
+                if (warningTimer > 120) { // 2 seconds warning
+                    gameState = STATES.BOSS_FIGHT;
+                    boss.active = true;
+                    document.getElementById('bossWarning').style.display = 'none';
+                    document.getElementById('bossHealth').style.display = 'block';
+                    document.getElementById('controlText').textContent = 'SURVIVE! Dodge the boss for 30 seconds!';
+                }
+                return;
+            }
+
+            // Move ball with drag
+            if (ball.isDragging) {
+                const dx = mouseX - ball.x;
+                const dy = mouseY - ball.y;
+                ball.vx = dx * 0.2;
+                ball.vy = dy * 0.2;
+            } else {
+                ball.vx *= 0.95;
+                ball.vy *= 0.95;
+            }
+
+            ball.x += ball.vx;
+            ball.y += ball.vy;
+
+            // Keep ball in bounds
+            if (ball.x - ball.radius < 0) ball.x = ball.radius;
+            if (ball.x + ball.radius > canvas.width) ball.x = canvas.width - ball.radius;
+            if (ball.y - ball.radius < 0) ball.y = ball.radius;
+            if (ball.y + ball.radius > canvas.height) ball.y = canvas.height - ball.radius;
+
+            // Update coins
+            coins.forEach((coin, index) => {
+                coin.update();
+                if (coin.checkCollision(ball)) {
+                    coins.splice(index, 1);
+                    score++;
+                    document.getElementById('score').textContent = score;
+                    
+                    // Coin collect particles
+                    for (let i = 0; i < 10; i++) {
+                        particles.push(new Particle(coin.x, coin.y, '#FFD700'));
+                    }
+                    
+                    // Spawn new coin
+                    coins.push(new Coin());
+
+                    // Check for boss spawn
+                    if (score === 50 && !boss.active && !bossDefeated) {
+                        gameState = STATES.BOSS_WARNING;
+                        document.getElementById('bossWarning').style.display = 'block';
+                        warningTimer = 0;
+                    }
+                }
+            });
+
+            // Update boss
+            if (gameState === STATES.BOSS_FIGHT) {
+                updateBoss();
+            }
+
+            // Update particles
+            particles = particles.filter(p => p.life > 0);
+            particles.forEach(p => p.update());
+        }
+
+        function draw() {
+            // Clear canvas
+            ctx.fillStyle = 'rgba(102, 126, 234, 0.3)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw particles
+            particles.forEach(p => p.draw());
+
+            // Draw coins
+            coins.forEach(coin => coin.draw());
+
+            // Draw boss
+            if (boss.active || gameState === STATES.BOSS_WARNING) {
+                drawBoss();
+            }
+
+            // Draw ball
+            const gradient = ctx.createRadialGradient(
+                ball.x - ball.radius / 3,
+                ball.y - ball.radius / 3,
+                ball.radius / 4,
+                ball.x,
+                ball.y,
+                ball.radius
+            );
+            gradient.addColorStop(0, '#FFF');
+            gradient.addColorStop(0.5, ball.color);
+            gradient.addColorStop(1, '#FF8C00');
+
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Draw drag indicator
+            if (ball.isDragging) {
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.arc(ball.x, ball.y, ball.radius + 10, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function gameOver(reason) {
+            gameState = STATES.GAME_OVER;
+            
+            // Update high score
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('highScore', highScore);
+            }
+
+            // Show game over screen
+            document.getElementById('gameOverTitle').textContent = reason || 'Game Over!';
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('finalHighScore').textContent = highScore;
+            document.getElementById('gameOver').style.display = 'block';
+            document.getElementById('bossHealth').style.display = 'none';
+        }
+
+        // Start game loop
+        gameLoop();
+    </script>
+</body>
+</html>
